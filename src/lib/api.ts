@@ -6,15 +6,15 @@ export type SubmitResult =
   | { ok: true }
   | { ok: false; code?: "device_used"; message: string; errors?: Record<string, string> };
 
-export type PostCounts = {
-  id: string;
-  label: string;
-  total: number;
-  parties: Record<string, number>;
-  candidates: { name: string; count: number }[];
+/** Survey data in the leads.json format. */
+export type LeadsJson = {
+  survey: string;
+  responses: {
+    response_id: string;
+    submitted_at: string;
+    selections: Record<string, { party: string; candidate_name: string | null }>;
+  }[];
 };
-
-export type ResultsData = { ok: true; total_responses: number; posts: PostCounts[]; updated_at: string };
 
 export const apiConfigured = () => SURVEY.apiUrl.trim() !== "";
 
@@ -80,9 +80,9 @@ export async function submitSurvey(payload: {
   return res.json();
 }
 
-export async function fetchResults(): Promise<ResultsData> {
-  const res = await fetch(`${SURVEY.apiUrl}?action=results`, { cache: "no-store" });
+export async function fetchLeads(): Promise<LeadsJson> {
+  const res = await fetch(`${SURVEY.apiUrl}?action=leads`, { cache: "no-store" });
   const data = await res.json();
-  if (!data.ok) throw new Error(data.message || "results_failed");
+  if (!Array.isArray(data.responses)) throw new Error(data.message || "leads_failed");
   return data;
 }

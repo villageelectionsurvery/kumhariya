@@ -3,7 +3,8 @@
 An informal opinion survey website for Gram Panchayat Kumhariya. It is not an official election or voting system.
 
 - **Website:** Next.js exported as static files and hosted free on GitHub Pages: https://villageelectionsurvery.github.io/kumhariya/
-- **Answers:** saved to your own Google Sheet by a small Google Apps Script (`apps-script/Code.gs`). There is no server to run.
+- **Answers:** saved to your own Google Sheet by a small Google Apps Script (`apps-script/Code.gs`), which serves them back as `leads.json` data (`<web app URL>?action=leads`). There is no server to run.
+- **Results:** https://villageelectionsurvery.github.io/kumhariya/survey-result/ reads that `leads.json` data and works out every count and percentage.
 - **Design:** `design/` holds the Stitch design this site follows.
 
 ## One-time setup: connect the Google Sheet
@@ -18,7 +19,9 @@ An informal opinion survey website for Gram Panchayat Kumhariya. It is not an of
 4. **Give the URL to the website.** In this GitHub repository, open **Settings → Secrets and variables → Actions → Variables → New repository variable**. Name it `SURVEY_API_URL`, paste the URL as the value, and save.
 5. **Redeploy.** Open the **Actions** tab, choose **Deploy to GitHub Pages**, and click **Run workflow**. After about a minute the survey is live.
 
-Until step 4 is done, the site shows that the survey is not active yet.
+Until step 4 is done, the survey page shows "सर्वेक्षण जल्द ही शुरू होगा" in place of the form, because answers would have nowhere to be saved.
+
+To download every answer as a `leads.json` file, open `<web app URL>?action=leads` in a browser and save the page.
 
 When you change `Code.gs` later, use **Deploy → Manage deployments → Edit → Version: New version** so the URL stays the same.
 

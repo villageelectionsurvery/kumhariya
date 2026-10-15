@@ -16,7 +16,7 @@ import {
 const LETTERS = ["क", "ख", "ग", "घ", "ङ", "च"];
 const partyById = Object.fromEntries(PARTIES.map((p) => [p.id, p]));
 
-type Stage = "loading" | "form" | "done" | "locked";
+type Stage = "loading" | "form" | "done" | "locked" | "not_started";
 
 function postError(postLabel: string, answer?: Answer): string {
   if (!answer?.party) return `${postLabel} पद के लिए अपनी पसंद चुनें।`;
@@ -52,8 +52,11 @@ export default function SurveyForm() {
       setStage("locked");
       return;
     }
+    if (!apiConfigured()) {
+      setStage("not_started"); // no place to save answers yet, so don't offer the form
+      return;
+    }
     setStage("form");
-    if (!apiConfigured()) return;
     checkDeviceStatus(deviceId())
       .then((submitted) => {
         if (submitted) {
@@ -84,10 +87,6 @@ export default function SurveyForm() {
   function review(e: React.FormEvent) {
     e.preventDefault();
     setFormError("");
-    if (!apiConfigured()) {
-      setFormError("सर्वेक्षण अभी चालू नहीं है (Google Sheet का पता सेट नहीं है)। कृपया व्यवस्थापक से संपर्क करें।");
-      return;
-    }
     const found: Record<string, string> = {};
     for (const p of POSTS) {
       const msg = postError(p.label, answers[p.id]);
@@ -137,7 +136,7 @@ export default function SurveyForm() {
   }
 
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
-  const resultsHref = `${basePath}/results/`;
+  const resultsHref = `${basePath}/survey-result/`;
 
   return (
     <>
@@ -153,6 +152,14 @@ export default function SurveyForm() {
       {stage === "loading" && (
         <div className="text-center text-muted py-5" role="status">
           <span className="spinner-border spinner-inline me-2" /> लोड हो रहा है...
+        </div>
+      )}
+
+      {stage === "not_started" && (
+        <div className="civic-card locked-panel text-center p-4 p-md-5 mb-4" role="status">
+          <span className="material-symbols-outlined locked-icon">schedule</span>
+          <h2 className="h4 mt-2">सर्वेक्षण जल्द ही शुरू होगा।</h2>
+          <p className="text-muted mb-0">कृपया थोड़ी देर बाद फिर से देखें। धन्यवाद!</p>
         </div>
       )}
 
