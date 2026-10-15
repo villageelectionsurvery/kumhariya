@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ArcElement, BarController, BarElement, CategoryScale, Chart, DoughnutController, Legend, LinearScale, Tooltip } from "chart.js";
-import { hindiNumber, PARTIES, POSTS, SURVEY } from "@/lib/config";
-import { backendConfigured, fetchLeads, fetchResults, type ResultsData } from "@/lib/api";
+import { cleanName, hindiNumber, PARTIES, POSTS, SURVEY } from "@/lib/config";
+import { apiConfigured, fetchLeads, type LeadsJson } from "@/lib/api";
 
 Chart.register(DoughnutController, ArcElement, BarController, BarElement, CategoryScale, LinearScale, Tooltip, Legend);
 Chart.defaults.font.family = "'Noto Sans Devanagari', 'Noto Sans', sans-serif";
@@ -24,53 +24,50 @@ type PostStats = {
   candidates: { name: string; count: number; percent: number }[];
 };
 
-function buildStats(data: ResultsData | null): PostStats[] {
+/** Counts every post from the leads.json responses. Independent candidates are
+    grouped by name (case and extra spaces ignored). */
+function buildStats(leads: LeadsJson | null): PostStats[] {
+  const responses = leads?.responses ?? [];
   return POSTS.map((post) => {
-    const counts = data?.posts.find((p) => p.label === post.label);
-    const total = counts?.total ?? 0;
+    const partyCounts = new Map(PARTIES.map((p) => [p.label, 0]));
+    const independent = PARTIES.find((p) => p.independent);
+    const candidates = new Map<string, { name: string; count: number }>();
+    let total = 0;
+    for (const r of responses) {
+      const sel = r.selections?.[post.label];
+      if (!sel || !partyCounts.has(sel.party)) continue;
+      total++;
+      partyCounts.set(sel.party, partyCounts.get(sel.party)! + 1);
+      if (sel.party === independent?.label && sel.candidate_name) {
+        const name = cleanName(sel.candidate_name);
+        const key = name.toLowerCase();
+        const c = candidates.get(key) ?? { name, count: 0 };
+        c.count++;
+        candidates.set(key, c);
+      }
+    }
     return {
       ...post,
       total,
       parties: PARTIES.map((p) => {
-        const count = counts?.parties[p.label] ?? 0;
+        const count = partyCounts.get(p.label)!;
         return { label: p.label, color: p.color, independent: Boolean(p.independent), count, percent: percent(count, total) };
       }),
-      candidates: (counts?.candidates ?? [])
+      candidates: [...candidates.values()]
         .map((c) => ({ ...c, percent: percent(c.count, total) }))
         .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name)),
     };
   });
 }
 
-function DownloadLeadsButton() {
-  const [busy, setBusy] = useState(false);
-  const [failed, setFailed] = useState(false);
-  async function download() {
-    setBusy(true);
-    setFailed(false);
-    try {
-      const leads = await fetchLeads();
-      const blob = new Blob([JSON.stringify(leads, null, 2)], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "leads.json";
-      a.click();
-      URL.revokeObjectURL(url);
-    } catch {
-      setFailed(true);
-    } finally {
-      setBusy(false);
-    }
-  }
-  return (
-    <span className="d-inline-flex flex-column align-items-md-end">
-      <button type="button" className="btn btn-outline-civic btn-sm download-btn" onClick={download} disabled={busy}>
-        <span className="material-symbols-outlined">download</span> {busy ? "तैयार हो रहा है..." : "leads.json डाउनलोड करें"}
-      </button>
-      {failed && <span className="small text-danger mt-1">डाउनलोड नहीं हो सका, दोबारा प्रयास करें।</span>}
-    </span>
-  );
+function downloadLeads(leads: LeadsJson) {
+  const blob = new Blob([JSON.stringify(leads, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "leads.json";
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 function PostCharts({ post }: { post: PostStats }) {
@@ -147,16 +144,16 @@ function PostCharts({ post }: { post: PostStats }) {
 }
 
 export default function ResultsDashboard() {
-  const [data, setData] = useState<ResultsData | null>(null);
+  const [data, setData] = useState<LeadsJson | null>(null);
   const [loadedAt, setLoadedAt] = useState<Date | null>(null);
   const [state, setState] = useState<"loading" | "ready" | "error" | "unconfigured">("loading");
 
   useEffect(() => {
-    if (!backendConfigured()) {
+    if (!apiConfigured()) {
       setState("unconfigured");
       return;
     }
-    fetchResults()
+    fetchLeads()
       .then((d) => {
         setData(d);
         setLoadedAt(new Date());
@@ -166,7 +163,7 @@ export default function ResultsDashboard() {
   }, []);
 
   const stats = useMemo(() => buildStats(data), [data]);
-  const total = data?.total_responses ?? 0;
+  const total = data?.responses.length ?? 0;
   const updated = loadedAt ? loadedAt.toLocaleString("en-IN", { timeZone: "Asia/Kolkata", dateStyle: "short", timeStyle: "short" }) : null;
 
   return (
@@ -176,12 +173,14 @@ export default function ResultsDashboard() {
           <h1 className="page-title mb-1">सर्वे परिणाम एवं विश्लेषण</h1>
           <p className="text-muted mb-0">{SURVEY.title}</p>
         </div>
-        {updated && (
+        {updated && data && (
           <div className="d-flex flex-column flex-md-row align-items-md-center gap-2">
             <span className="pill pill-neutral">
               <span className="material-symbols-outlined">schedule</span> अद्यतन: {updated}
             </span>
-            <DownloadLeadsButton />
+            <button type="button" className="btn btn-outline-civic btn-sm download-btn" onClick={() => downloadLeads(data)}>
+              <span className="material-symbols-outlined">download</span> leads.json डाउनलोड करें
+            </button>
           </div>
         )}
       </div>

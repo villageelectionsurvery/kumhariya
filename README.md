@@ -2,65 +2,55 @@
 
 An informal opinion survey website for Gram Panchayat Kumhariya. It is not an official election or voting system.
 
-- **Survey:** https://villageelectionsurvery.github.io/kumhariya/
-- **Results:** https://villageelectionsurvery.github.io/kumhariya/survey-result/ (with a **Download leads.json** button)
-- **How it works:** a static Next.js site on GitHub Pages; answers are saved in Google Firebase (Cloud Firestore, free plan). There is no server to run.
+- **Website:** Next.js exported as static files and hosted free on GitHub Pages: https://villageelectionsurvery.github.io/kumhariya/
+- **Answers:** saved to your own Google Sheet by a small Google Apps Script (`apps-script/Code.gs`), which serves them back as `leads.json` data (`<web app URL>?action=leads`). There is no server to run.
+- **Results:** https://villageelectionsurvery.github.io/kumhariya/survey-result/ reads that `leads.json` data and works out every count and percentage. Its **Download leads.json** button saves all responses as a file.
 - **Design:** `design/` holds the Stitch design this site follows.
 
-## One-time Firebase setup
+## One-time setup: connect the Google Sheet
 
-1. Go to https://console.firebase.google.com and click **Create a project**. Name it, for example, `kumhariya-survey`. Google Analytics is not needed; you can turn it off.
-2. In the left menu open **Build → Firestore Database → Create database**. Choose location **asia-south1 (Mumbai)**, then **Start in production mode**.
-3. Open the **Rules** tab, replace everything with the contents of `firestore.rules`, and click **Publish**.
-4. Click the gear icon → **Project settings** → **Your apps** → the web icon **`</>`**. Give the app a name (e.g. `kumhariya-web`), leave "Firebase Hosting" unticked, and click **Register app**.
-5. Copy the `firebaseConfig = { ... }` values shown and paste them into `FIREBASE_CONFIG` in `src/lib/config.ts`, then push. (Alternatively, save them as JSON in a repository variable named `FIREBASE_CONFIG`.) The push redeploys the site automatically.
+1. **Create the sheet.** In Google Drive, create a new Google Sheet, for example "Kumhariya Survey Responses". Sign in with the Google account that should own the survey data.
+2. **Add the script.** In the sheet, open **Extensions → Apps Script**. Delete everything in the editor. Open https://raw.githubusercontent.com/villageelectionsurvery/kumhariya/main/apps-script/Code.gs, press Cmd/Ctrl+A then Cmd/Ctrl+C, paste it into the empty editor, and click **Save**. Line 1 must be `/**`.
+3. **Deploy it.** Click **Deploy → New deployment**. Choose the type **Web app**, then set:
+   - Execute as: **Me**
+   - Who has access: **Anyone**
 
-Until step 5 is done, the survey page shows "सर्वेक्षण जल्द ही शुरू होगा" in place of the form.
+   Click **Deploy**, allow the permissions Google asks for, and copy the **Web app URL** (it ends in `/exec`).
+4. **Give the URL to the website.** In this GitHub repository, open **Settings → Secrets and variables → Actions → Variables → New repository variable**. Name it `SURVEY_API_URL`, paste the URL as the value, and save.
+5. **Redeploy.** Open the **Actions** tab, choose **Deploy to GitHub Pages**, and click **Run workflow**. After about a minute the survey is live.
 
-The `firebaseConfig` values identify your project and are meant to be public; the security rules decide what anyone can do.
+Until step 4 is done, the survey page shows "सर्वेक्षण जल्द ही शुरू होगा" in place of the form, because answers would have nowhere to be saved.
+
+To download every answer as a `leads.json` file, open `<web app URL>?action=leads` in a browser and save the page.
+
+When you change `Code.gs` later, use **Deploy → Manage deployments → Edit → Version: New version** so the URL stays the same.
 
 ## Where the answers go
 
-Firestore collection `responses`, one document per device:
-
-```json
-{
-  "response_id": "20261015-0123456789abcdef",
-  "submitted_at": "<server time>",
-  "selections": {
-    "सरपंच": { "party": "कांग्रेस", "candidate_name": null },
-    "वार्ड पंच - वार्ड 2": { "party": "निर्दलीय", "candidate_name": "सीता देवी" }
-  }
-}
-```
-
-The **Download leads.json** button on the results page exports everything in the `leads.json` format (`{"survey": ..., "responses": [...]}`), times in Indian time.
-
-## What the security rules enforce
-
-- Anyone can add **one** response per device; nobody can edit or delete a saved response.
-- Every post must be answered, only कांग्रेस / बीजेपी / निर्दलीय are accepted, and निर्दलीय needs a 2–60 character name.
-- The time is set by Google's server, so it can't be faked.
-- No other data or collections can be written.
+Each response is one row in the **Responses** tab: a response ID, the time (Indian time), a device code, and one column pair per post (party and independent candidate name). The `selections_json` column holds the full answer and is what the results page counts. Don't edit or delete that column.
 
 ## How duplicates are limited
 
-- The browser keeps a random ID; the response is saved under a SHA-256 hash of it, and the rules refuse a second response under the same hash. That device then sees "पहले ही दर्ज हो चुकी है".
+- **One response per device:** the browser keeps a random ID, and the script stores only a keyed hash of it. A device that has answered sees a "पहले ही दर्ज हो चुकी है" screen, so its answers can't be changed or submitted again.
 - This cannot guarantee one response per person: clearing browser data, private browsing, or another phone gets around it.
+- Each filled-in form also has its own ID, so a retried or double-clicked submit is saved once.
+- The script accepts one submission at a time (a lock), so simultaneous answers are never lost.
 
 ## Change posts, wards or parties
 
-Edit `POSTS` / `PARTIES` in `src/lib/config.ts` **and** the post labels and party names in `firestore.rules` the same way, publish the rules, then push. A post's `label` is saved with each response, so keep it unchanged once responses exist.
+Edit `POSTS` / `PARTIES` in `src/lib/config.ts` **and** `CONFIG` in `apps-script/Code.gs` the same way, then push and redeploy the script as a new version. A post's `label` is what is saved in the sheet, so keep it unchanged once responses exist; add a new post instead.
+
+The header helpline ("नागरिक सहायता") appears when `helpline` is set in `src/lib/config.ts`.
 
 ## Run locally
 
 ```bash
 npm install
-npm run dev
+NEXT_PUBLIC_SURVEY_API_URL="<your web app URL>" npm run dev
 ```
 
-Open http://localhost:3000. It uses the Firebase project set in `src/lib/config.ts`.
+Open http://localhost:3000.
 
-## Free plan limits
+## Limits
 
-The free Spark plan allows 50,000 reads and 20,000 writes per day. The results page uses count queries (about one read per 1,000 responses for each count) plus the निर्दलीय responses, so a village-size survey stays well inside the free limits.
+Google Apps Script handles a village-size survey comfortably. For a very large public survey (thousands of answers per hour), move the answers to a proper database.

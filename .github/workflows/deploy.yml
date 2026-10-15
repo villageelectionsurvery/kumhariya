@@ -27,9 +27,8 @@ jobs:
       - run: npm run build
         env:
           NEXT_PUBLIC_BASE_PATH: /kumhariya
-          # Optional: Firebase config as JSON (Settings → Secrets and variables → Actions → Variables).
-          # When empty, the values in src/lib/config.ts are used.
-          NEXT_PUBLIC_FIREBASE_CONFIG: ${{ vars.FIREBASE_CONFIG }}
+          # Google Apps Script web app URL, set under Settings → Secrets and variables → Actions → Variables
+          NEXT_PUBLIC_SURVEY_API_URL: ${{ vars.SURVEY_API_URL }}
       - run: touch out/.nojekyll # keep the _next folder
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
