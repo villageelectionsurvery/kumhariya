@@ -14,7 +14,6 @@ var CONFIG = {
   sheetName: 'Responses',
   posts: [
     { id: 'sarpanch', label: 'सरपंच' },
-    { id: 'upsarpanch', label: 'उपसरपंच' },
     { id: 'ward_1', label: 'वार्ड पंच - वार्ड 1' },
     { id: 'ward_2', label: 'वार्ड पंच - वार्ड 2' },
     { id: 'ward_3', label: 'वार्ड पंच - वार्ड 3' }

@@ -23,7 +23,6 @@ export const SURVEY = {
 
 export const POSTS: Post[] = [
   { id: "sarpanch", label: "सरपंच", title: "सरपंच (Sarpanch)", tag: "मुख्य पद" },
-  { id: "upsarpanch", label: "उपसरपंच", title: "उपसरपंच (Up-Sarpanch)", tag: "पंचायत उप-प्रमुख" },
   { id: "ward_1", label: "वार्ड पंच - वार्ड 1", title: "वार्ड पंच — वार्ड संख्या 1", tag: "वार्ड पंच" },
   { id: "ward_2", label: "वार्ड पंच - वार्ड 2", title: "वार्ड पंच — वार्ड संख्या 2", tag: "वार्ड पंच" },
   { id: "ward_3", label: "वार्ड पंच - वार्ड 3", title: "वार्ड पंच — वार्ड संख्या 3", tag: "वार्ड पंच" },
