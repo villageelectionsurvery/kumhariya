@@ -36,9 +36,15 @@ Each response is one row in the **Responses** tab: a response ID, the time (Indi
 - Each filled-in form also has its own ID, so a retried or double-clicked submit is saved once.
 - The script accepts one submission at a time (a lock), so simultaneous answers are never lost.
 
+## Posts
+
+1. पंचायत समिति सदस्य — कांग्रेस / बीजेपी / निर्दलीय (+ name for निर्दलीय)
+2. सरपंच — कांग्रेस / बीजेपी / निर्दलीय (+ name for निर्दलीय)
+3–5. वार्ड पंच, wards 1–3 — candidate's name only (saved with `"party": null`)
+
 ## Change posts, wards or parties
 
-Edit `POSTS` / `PARTIES` in `src/lib/config.ts` **and** `CONFIG` in `apps-script/Code.gs` the same way, then push and redeploy the script as a new version. A post's `label` is what is saved in the sheet, so keep it unchanged once responses exist; add a new post instead.
+Edit `POSTS` / `PARTIES` in `src/lib/config.ts` **and** `CONFIG` in `apps-script/Code.gs` the same way (each post has `type: "party"` or `type: "name"`), then push and redeploy the script as a new version. A post's `label` is what is saved in the sheet, so keep it unchanged once responses exist; add a new post instead.
 
 The header helpline ("नागरिक सहायता") appears when `helpline` is set in `src/lib/config.ts`.
 

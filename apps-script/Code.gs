@@ -13,11 +13,14 @@
 var CONFIG = {
   surveyTitle: 'ग्राम कुम्हारिया चुनाव सर्वेक्षण',
   sheetName: 'Responses',
+  // type 'party': कांग्रेस / बीजेपी / निर्दलीय (+ name for निर्दलीय)
+  // type 'name':  candidate's name only (saved with party = null)
   posts: [
-    { id: 'sarpanch', label: 'सरपंच' },
-    { id: 'ward_1', label: 'वार्ड पंच - वार्ड 1' },
-    { id: 'ward_2', label: 'वार्ड पंच - वार्ड 2' },
-    { id: 'ward_3', label: 'वार्ड पंच - वार्ड 3' }
+    { id: 'panchayat_samiti', label: 'पंचायत समिति सदस्य', type: 'party' },
+    { id: 'sarpanch', label: 'सरपंच', type: 'party' },
+    { id: 'ward_1', label: 'वार्ड पंच - वार्ड 1', type: 'name' },
+    { id: 'ward_2', label: 'वार्ड पंच - वार्ड 2', type: 'name' },
+    { id: 'ward_3', label: 'वार्ड पंच - वार्ड 3', type: 'name' }
   ],
   parties: [
     { id: 'congress', label: 'कांग्रेस' },
@@ -91,7 +94,8 @@ function doPost(e) {
     ];
     CONFIG.posts.forEach(function (post) {
       var sel = checked.selections[post.label];
-      row.push(sel.party, sel.candidate_name || '');
+      if (post.type === 'name') row.push(sel.candidate_name);
+      else row.push(sel.party, sel.candidate_name || '');
     });
     sheet.appendRow(row);
     return json_({ ok: true });
@@ -109,6 +113,15 @@ function validate_(input) {
   var errors = {};
   CONFIG.posts.forEach(function (post) {
     var answer = input[post.id] || {};
+    if (post.type === 'name') {
+      var name = cleanName_(String(answer.candidate || ''));
+      if (!NAME_PATTERN.test(name)) {
+        errors[post.id] = post.label + ' पद के उम्मीदवार का सही नाम लिखें (2–60 अक्षर)।';
+        return;
+      }
+      selections[post.label] = { party: null, candidate_name: name };
+      return;
+    }
     var party = CONFIG.parties.filter(function (p) { return p.id === answer.party; })[0];
     if (!party) {
       errors[post.id] = post.label + ' पद के लिए अपनी पसंद चुनें।';
@@ -151,11 +164,18 @@ function leads_() {
 function sheet_() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheetByName(CONFIG.sheetName) || ss.insertSheet(CONFIG.sheetName);
+  var header = FIXED_COLUMNS.slice();
+  CONFIG.posts.forEach(function (post) {
+    if (post.type === 'name') header.push(post.label + ' — उम्मीदवार का नाम');
+    else header.push(post.label + ' — पार्टी', post.label + ' — निर्दलीय नाम');
+  });
   if (sheet.getLastRow() === 0) {
-    var header = FIXED_COLUMNS.slice();
-    CONFIG.posts.forEach(function (post) { header.push(post.label + ' — पार्टी', post.label + ' — निर्दलीय नाम'); });
     sheet.appendRow(header);
     sheet.setFrozenRows(1);
+  } else {
+    // posts changed since the sheet was created: refresh the header row
+    var current = sheet.getRange(1, 1, 1, header.length).getValues()[0];
+    if (current.join('|') !== header.join('|')) sheet.getRange(1, 1, 1, header.length).setValues([header]);
   }
   return sheet;
 }

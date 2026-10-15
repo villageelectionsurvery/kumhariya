@@ -6,7 +6,11 @@
  * saved in the sheet, so keep it unchanged once responses exist for it.
  */
 
-export type Post = { id: string; label: string; title: string; tag: string };
+/*
+ * type "party": choose कांग्रेस / बीजेपी / निर्दलीय (निर्दलीय asks for a name).
+ * type "name":  only the candidate's name is written; no party choice.
+ */
+export type Post = { id: string; label: string; title: string; tag: string; type: "party" | "name" };
 export type Party = { id: string; label: string; hint: string; icon: string; color: string; independent?: boolean };
 
 export const SURVEY = {
@@ -24,10 +28,11 @@ export const SURVEY = {
 };
 
 export const POSTS: Post[] = [
-  { id: "sarpanch", label: "सरपंच", title: "सरपंच (Sarpanch)", tag: "मुख्य पद" },
-  { id: "ward_1", label: "वार्ड पंच - वार्ड 1", title: "वार्ड पंच — वार्ड संख्या 1", tag: "वार्ड पंच" },
-  { id: "ward_2", label: "वार्ड पंच - वार्ड 2", title: "वार्ड पंच — वार्ड संख्या 2", tag: "वार्ड पंच" },
-  { id: "ward_3", label: "वार्ड पंच - वार्ड 3", title: "वार्ड पंच — वार्ड संख्या 3", tag: "वार्ड पंच" },
+  { id: "panchayat_samiti", label: "पंचायत समिति सदस्य", title: "पंचायत समिति सदस्य (Panchayat Samiti Member)", tag: "पंचायत समिति", type: "party" },
+  { id: "sarpanch", label: "सरपंच", title: "सरपंच (Sarpanch)", tag: "मुख्य पद", type: "party" },
+  { id: "ward_1", label: "वार्ड पंच - वार्ड 1", title: "वार्ड पंच — वार्ड संख्या 1", tag: "वार्ड पंच", type: "name" },
+  { id: "ward_2", label: "वार्ड पंच - वार्ड 2", title: "वार्ड पंच — वार्ड संख्या 2", tag: "वार्ड पंच", type: "name" },
+  { id: "ward_3", label: "वार्ड पंच - वार्ड 3", title: "वार्ड पंच — वार्ड संख्या 3", tag: "वार्ड पंच", type: "name" },
 ];
 
 export const PARTIES: Party[] = [

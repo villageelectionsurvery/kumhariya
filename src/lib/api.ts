@@ -12,7 +12,7 @@ export type LeadsJson = {
   responses: {
     response_id: string;
     submitted_at: string;
-    selections: Record<string, { party: string; candidate_name: string | null }>;
+    selections: Record<string, { party: string | null; candidate_name: string | null }>;
   }[];
 };
 

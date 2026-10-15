@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { cleanName, hindiNumber, NAME_PATTERN, PARTIES, POSTS, SURVEY } from "@/lib/config";
+import { cleanName, hindiNumber, NAME_PATTERN, PARTIES, POSTS, SURVEY, type Post } from "@/lib/config";
 import {
   apiConfigured,
   checkDeviceStatus,
@@ -18,15 +18,21 @@ const partyById = Object.fromEntries(PARTIES.map((p) => [p.id, p]));
 
 type Stage = "loading" | "form" | "done" | "locked" | "not_started";
 
-function postError(postLabel: string, answer?: Answer): string {
-  if (!answer?.party) return `${postLabel} पद के लिए अपनी पसंद चुनें।`;
-  if (partyById[answer.party]?.independent && !NAME_PATTERN.test(cleanName(answer.candidate ?? ""))) {
-    return `${postLabel} पद के निर्दलीय उम्मीदवार का सही नाम लिखें (2–60 अक्षर)।`;
+const validName = (s?: string) => NAME_PATTERN.test(cleanName(s ?? ""));
+
+function postError(post: Post, answer?: Answer): string {
+  if (post.type === "name") {
+    return validName(answer?.candidate) ? "" : `${post.label} पद के उम्मीदवार का सही नाम लिखें (2–60 अक्षर)।`;
+  }
+  if (!answer?.party) return `${post.label} पद के लिए अपनी पसंद चुनें।`;
+  if (partyById[answer.party]?.independent && !validName(answer.candidate)) {
+    return `${post.label} पद के निर्दलीय उम्मीदवार का सही नाम लिखें (2–60 अक्षर)।`;
   }
   return "";
 }
 
-function answerText(answer?: Answer): string | null {
+function answerText(post: Post, answer?: Answer): string | null {
+  if (post.type === "name") return cleanName(answer?.candidate ?? "") || null;
   if (!answer?.party) return null;
   const party = partyById[answer.party];
   if (party.independent) return `${party.label} — ${cleanName(answer.candidate ?? "") || "नाम लिखें"}`;
@@ -69,13 +75,13 @@ export default function SurveyForm() {
       });
   }, []);
 
-  const completed = useMemo(() => POSTS.filter((p) => !postError(p.label, answers[p.id])).length, [answers]);
+  const completed = useMemo(() => POSTS.filter((p) => !postError(p, answers[p.id])).length, [answers]);
 
   function setAnswer(postId: string, next: Answer) {
     setAnswers((a) => ({ ...a, [postId]: next }));
     if (errors[postId]) {
-      const label = POSTS.find((p) => p.id === postId)!.label;
-      setErrors((e) => ({ ...e, [postId]: postError(label, next) }));
+      const post = POSTS.find((p) => p.id === postId)!;
+      setErrors((e) => ({ ...e, [postId]: postError(post, next) }));
     }
   }
 
@@ -89,7 +95,7 @@ export default function SurveyForm() {
     setFormError("");
     const found: Record<string, string> = {};
     for (const p of POSTS) {
-      const msg = postError(p.label, answers[p.id]);
+      const msg = postError(p, answers[p.id]);
       if (msg) found[p.id] = msg;
     }
     setErrors(found);
@@ -107,6 +113,7 @@ export default function SurveyForm() {
       const selections = Object.fromEntries(
         POSTS.map((p) => {
           const a = answers[p.id];
+          if (p.type === "name") return [p.id, { party: "", candidate: cleanName(a.candidate ?? "") }];
           return [p.id, partyById[a.party].independent ? { party: a.party, candidate: cleanName(a.candidate ?? "") } : { party: a.party }];
         }),
       );
@@ -203,7 +210,7 @@ export default function SurveyForm() {
               <div className="col-lg-8">
                 {POSTS.map((post, i) => {
                   const answer = answers[post.id];
-                  const complete = !postError(post.label, answer);
+                  const complete = !postError(post, answer);
                   const showName = answer && partyById[answer.party]?.independent;
                   return (
                     <fieldset
@@ -228,36 +235,55 @@ export default function SurveyForm() {
                       </legend>
                       <p className="question mb-3">
                         प्रश्न {i + 1}: {post.label} पद के लिए आपकी पसंद कौन है?
+                        {post.type === "name" && " उम्मीदवार का नाम लिखें।"}
                       </p>
-                      <div className="row g-3">
-                        {PARTIES.map((party, j) => {
-                          const inputId = `${post.id}_${party.id}`;
-                          return (
-                            <div className="col-md-4" key={party.id}>
-                              <label className="choice-card" htmlFor={inputId}>
-                                <span className="d-flex justify-content-between align-items-start">
-                                  <span className="letter-badge">{LETTERS[j]}</span>
-                                  <input
-                                    className="form-check-input choice-input"
-                                    type="radio"
-                                    id={inputId}
-                                    name={`choice-${post.id}`}
-                                    value={party.id}
-                                    checked={answer?.party === party.id}
-                                    onChange={() => choose(post.id, party.id)}
-                                  />
-                                </span>
-                                <span className="choice-name">
-                                  <span className="material-symbols-outlined">{party.icon}</span>
-                                  {party.label}
-                                </span>
-                                <span className="choice-hint">{party.hint}</span>
-                              </label>
-                            </div>
-                          );
-                        })}
-                      </div>
-                      {showName && (
+                      {post.type === "name" ? (
+                        <div className="candidate-box">
+                          <label className="form-label fw-semibold" htmlFor={`candidate_${post.id}`}>
+                            उम्मीदवार का नाम लिखें
+                          </label>
+                          <input
+                            type="text"
+                            className="form-control form-control-lg"
+                            id={`candidate_${post.id}`}
+                            maxLength={60}
+                            autoComplete="off"
+                            placeholder="उदा. रामलाल"
+                            value={answer?.candidate ?? ""}
+                            onChange={(e) => setAnswer(post.id, { party: "", candidate: e.target.value })}
+                          />
+                        </div>
+                      ) : (
+                        <div className="row g-3">
+                          {PARTIES.map((party, j) => {
+                            const inputId = `${post.id}_${party.id}`;
+                            return (
+                              <div className="col-md-4" key={party.id}>
+                                <label className="choice-card" htmlFor={inputId}>
+                                  <span className="d-flex justify-content-between align-items-start">
+                                    <span className="letter-badge">{LETTERS[j]}</span>
+                                    <input
+                                      className="form-check-input choice-input"
+                                      type="radio"
+                                      id={inputId}
+                                      name={`choice-${post.id}`}
+                                      value={party.id}
+                                      checked={answer?.party === party.id}
+                                      onChange={() => choose(post.id, party.id)}
+                                    />
+                                  </span>
+                                  <span className="choice-name">
+                                    <span className="material-symbols-outlined">{party.icon}</span>
+                                    {party.label}
+                                  </span>
+                                  <span className="choice-hint">{party.hint}</span>
+                                </label>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                      {post.type === "party" && showName && (
                         <div className="candidate-box mt-3">
                           <label className="form-label fw-semibold" htmlFor={`candidate_${post.id}`}>
                             निर्दलीय उम्मीदवार का नाम लिखें
@@ -288,7 +314,7 @@ export default function SurveyForm() {
                     <div>
                       <div className="fw-semibold mb-1">गोपनीयता सूचना</div>
                       <ul className="small mb-0 ps-3">
-                        <li>हम केवल आपके द्वारा चुनी गई पसंद (पार्टी या निर्दलीय उम्मीदवार का नाम) और जमा करने का समय दर्ज करते हैं।</li>
+                        <li>हम केवल आपके द्वारा चुनी गई पसंद (पार्टी या उम्मीदवार का नाम) और जमा करने का समय दर्ज करते हैं।</li>
                         <li>आपका नाम, मोबाइल नंबर या पता नहीं माँगा जाता और न ही सहेजा जाता है।</li>
                         <li>प्रतिक्रियाएँ सर्वेक्षण आयोजक की Google Sheet में सहेजी जाती हैं और केवल कुल आँकड़ों के रूप में दिखाई जाती हैं।</li>
                         <li>
@@ -317,7 +343,7 @@ export default function SurveyForm() {
                   </div>
                   <ul className="summary-list list-unstyled mb-3">
                     {POSTS.map((post) => {
-                      const text = answerText(answers[post.id]);
+                      const text = answerText(post, answers[post.id]);
                       return (
                         <li key={post.id}>
                           <span className="small text-muted d-block">{post.label}</span>
@@ -351,7 +377,7 @@ export default function SurveyForm() {
                     {POSTS.map((post) => (
                       <li key={post.id}>
                         <span className="text-muted small d-block">{post.label}</span>
-                        <strong>{answerText(answers[post.id])}</strong>
+                        <strong>{answerText(post, answers[post.id])}</strong>
                       </li>
                     ))}
                   </ul>
