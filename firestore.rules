@@ -1,0 +1,50 @@
+rules_version = '2';
+
+// Kumhariya survey. Paste this into Firebase console → Firestore Database → Rules
+// and click Publish. Keep the post labels and parties in step with
+// src/lib/config.ts.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function validAnswer(a) {
+      return a is map
+        && a.keys().hasOnly(['party', 'candidate_name'])
+        && a.keys().hasAll(['party', 'candidate_name'])
+        && (
+          (a.party in ['कांग्रेस', 'बीजेपी'] && a.candidate_name == null)
+          || (a.party == 'निर्दलीय' && a.candidate_name is string
+              && a.candidate_name.size() >= 2 && a.candidate_name.size() <= 60)
+        );
+    }
+
+    function validSelections(s) {
+      return s is map
+        && s.keys().hasOnly(['सरपंच', 'वार्ड पंच - वार्ड 1', 'वार्ड पंच - वार्ड 2', 'वार्ड पंच - वार्ड 3'])
+        && s.keys().hasAll(['सरपंच', 'वार्ड पंच - वार्ड 1', 'वार्ड पंच - वार्ड 2', 'वार्ड पंच - वार्ड 3'])
+        && validAnswer(s['सरपंच'])
+        && validAnswer(s['वार्ड पंच - वार्ड 1'])
+        && validAnswer(s['वार्ड पंच - वार्ड 2'])
+        && validAnswer(s['वार्ड पंच - वार्ड 3']);
+    }
+
+    // One document per device (ID = SHA-256 hash of the browser's random ID).
+    // Anyone may read the responses (the results page counts them) and add a
+    // new one; nobody can change or delete a response once saved.
+    match /responses/{deviceHash} {
+      allow get, list: if true;
+      allow create: if deviceHash.matches('^[a-f0-9]{64}$')
+        && request.resource.data.keys().hasOnly(['response_id', 'submitted_at', 'selections'])
+        && request.resource.data.keys().hasAll(['response_id', 'submitted_at', 'selections'])
+        && request.resource.data.response_id is string
+        && request.resource.data.response_id.matches('^[0-9]{8}-[a-f0-9]{16}$')
+        && request.resource.data.submitted_at == request.time
+        && validSelections(request.resource.data.selections);
+      allow update, delete: if false;
+    }
+
+    // Everything else is closed.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

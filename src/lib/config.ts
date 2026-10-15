@@ -1,9 +1,9 @@
 /*
  * Survey configuration. Edit this file to change posts, wards or parties.
  *
- * Keep `posts` and `parties` in step with CONFIG in apps-script/Code.gs, which
- * validates every answer the Google Sheet receives. A post's `label` is what is
- * saved in the sheet, so keep it unchanged once responses exist for it.
+ * Keep `posts` and `parties` in step with firestore.rules, which validates
+ * every answer Firebase receives. A post's `label` is what is saved with each
+ * response, so keep it unchanged once responses exist for it.
  */
 
 export type Post = { id: string; label: string; title: string; tag: string };
@@ -13,13 +13,25 @@ export const SURVEY = {
   title: "ग्राम कुम्हारिया चुनाव सर्वेक्षण",
   village: "ग्राम पंचायत कुम्हारिया",
 
-  // Web app URL from the Google Apps Script deployment (see README, step 3).
-  // Set it with the NEXT_PUBLIC_SURVEY_API_URL environment variable, or paste the URL in place of "".
-  apiUrl: process.env.NEXT_PUBLIC_SURVEY_API_URL || "",
-
   // Help number shown in the header ("नागरिक सहायता"). Leave empty to hide it.
   helpline: "",
 };
+
+/*
+ * Firebase web app config (Firebase console → Project settings → Your apps).
+ * These values identify the project; they are not secret. Security comes from
+ * firestore.rules. NEXT_PUBLIC_FIREBASE_CONFIG (JSON) overrides them.
+ */
+export const FIREBASE_CONFIG: Record<string, string> = process.env.NEXT_PUBLIC_FIREBASE_CONFIG
+  ? JSON.parse(process.env.NEXT_PUBLIC_FIREBASE_CONFIG)
+  : {
+      apiKey: "",
+      authDomain: "",
+      projectId: "",
+      storageBucket: "",
+      messagingSenderId: "",
+      appId: "",
+    };
 
 export const POSTS: Post[] = [
   { id: "sarpanch", label: "सरपंच", title: "सरपंच (Sarpanch)", tag: "मुख्य पद" },

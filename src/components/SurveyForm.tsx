@@ -2,16 +2,9 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { cleanName, hindiNumber, NAME_PATTERN, PARTIES, POSTS, SURVEY } from "@/lib/config";
-import {
-  apiConfigured,
-  checkDeviceStatus,
-  deviceId,
-  locallySubmitted,
-  markSubmitted,
-  newSubmissionId,
-  submitSurvey,
-  type Answer,
-} from "@/lib/api";
+import { backendConfigured, deviceHasSubmitted, locallySubmitted, markSubmitted, submitSurvey, type Selection } from "@/lib/api";
+
+type Answer = { party: string; candidate?: string };
 
 const LETTERS = ["क", "ख", "ग", "घ", "ङ", "च"];
 const partyById = Object.fromEntries(PARTIES.map((p) => [p.id, p]));
@@ -40,24 +33,23 @@ export default function SurveyForm() {
   const [formError, setFormError] = useState("");
   const [confirming, setConfirming] = useState(false);
   const [sending, setSending] = useState(false);
-  // One ID per filled-in form, so a retried request is saved only once.
-  const submissionId = useRef("");
+  // Set after the first save attempt, so a retry after a lost reply counts as saved.
+  const triedSubmit = useRef(false);
   const cardRefs = useRef<Record<string, HTMLFieldSetElement | null>>({});
   const nameRefs = useRef<Record<string, HTMLInputElement | null>>({});
   const doneRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    submissionId.current = newSubmissionId();
     if (locallySubmitted()) {
       setStage("locked");
       return;
     }
-    if (!apiConfigured()) {
+    if (!backendConfigured()) {
       setStage("not_started"); // no place to save answers yet, so don't offer the form
       return;
     }
     setStage("form");
-    checkDeviceStatus(deviceId())
+    deviceHasSubmitted()
       .then((submitted) => {
         if (submitted) {
           markSubmitted();
@@ -104,13 +96,17 @@ export default function SurveyForm() {
   async function submit() {
     setSending(true);
     try {
-      const selections = Object.fromEntries(
+      // keyed by post label, the same shape as leads.json
+      const selections: Record<string, Selection> = Object.fromEntries(
         POSTS.map((p) => {
           const a = answers[p.id];
-          return [p.id, partyById[a.party].independent ? { party: a.party, candidate: cleanName(a.candidate ?? "") } : { party: a.party }];
+          const party = partyById[a.party];
+          return [p.label, { party: party.label, candidate_name: party.independent ? cleanName(a.candidate ?? "") : null }];
         }),
       );
-      const result = await submitSurvey({ submission_id: submissionId.current, device_id: deviceId(), selections });
+      const tried = triedSubmit.current;
+      triedSubmit.current = true;
+      const result = await submitSurvey(selections, tried);
       setConfirming(false);
       if (result.ok) {
         markSubmitted();
@@ -125,7 +121,6 @@ export default function SurveyForm() {
         window.scrollTo({ top: 0, behavior: "smooth" });
         return;
       }
-      if (result.errors) setErrors(result.errors);
       setFormError(result.message);
     } catch {
       setConfirming(false);
@@ -290,7 +285,7 @@ export default function SurveyForm() {
                       <ul className="small mb-0 ps-3">
                         <li>हम केवल आपके द्वारा चुनी गई पसंद (पार्टी या निर्दलीय उम्मीदवार का नाम) और जमा करने का समय दर्ज करते हैं।</li>
                         <li>आपका नाम, मोबाइल नंबर या पता नहीं माँगा जाता और न ही सहेजा जाता है।</li>
-                        <li>प्रतिक्रियाएँ सर्वेक्षण आयोजक की Google Sheet में सहेजी जाती हैं और केवल कुल आँकड़ों के रूप में दिखाई जाती हैं।</li>
+                        <li>प्रतिक्रियाएँ सर्वेक्षण आयोजक के ऑनलाइन डेटाबेस (Google Firebase) में सहेजी जाती हैं और केवल कुल आँकड़ों के रूप में दिखाई जाती हैं।</li>
                         <li>
                           एक डिवाइस से केवल एक बार प्रतिक्रिया दी जा सकती है। इसके लिए आपके ब्राउज़र में एक रैंडम पहचान-कोड रखा जाता है,
                           जिससे आपकी व्यक्तिगत पहचान नहीं होती। जमा करने के बाद प्रतिक्रिया बदली नहीं जा सकती।
