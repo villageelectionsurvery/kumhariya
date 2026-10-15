@@ -15,7 +15,9 @@ export const SURVEY = {
 
   // Web app URL from the Google Apps Script deployment (see README, step 3).
   // Set it with the NEXT_PUBLIC_SURVEY_API_URL environment variable, or paste the URL in place of "".
-  apiUrl: process.env.NEXT_PUBLIC_SURVEY_API_URL || "",
+  apiUrl:
+    process.env.NEXT_PUBLIC_SURVEY_API_URL ||
+    "https://script.google.com/macros/s/AKfycbz78u8GVMwRPFhfJfsIveVBJnQ7V4oytj6v9DTVUd8VJZkiukdmheegt7f27LXQSkrC/exec",
 
   // Help number shown in the header ("नागरिक सहायता"). Leave empty to hide it.
   helpline: "",
