@@ -1,0 +1,6 @@
+# Block direct access to config, library and data files
+<FilesMatch "^(config|lib)\.php$">
+  Require all denied
+</FilesMatch>
+RedirectMatch 403 ^/?(.*/)?(partials|data)/
+AddDefaultCharset UTF-8
