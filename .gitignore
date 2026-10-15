@@ -1,5 +1,6 @@
-# survey data and secrets stay on the server
-data/leads.json
-data/leads.json.*
-data/device.key
+node_modules
+.next
+out
+next-env.d.ts
+*.tsbuildinfo
 .DS_Store

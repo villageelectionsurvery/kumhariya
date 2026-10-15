@@ -1,4 +1,4 @@
-/* Gram Panchayat Kumhariya civic design (see DESIGN.md) on top of Bootstrap 5 */
+/* Gram Panchayat Kumhariya civic design (see design/DESIGN.md) on top of Bootstrap 5 */
 :root {
   --civic-slate: #0f172a;
   --civic-green: #1b5e20;
@@ -11,7 +11,7 @@
   --line: #e2e8f0;
   --text: #0b1c30;
   --text-muted: #45464d;
-  --bs-body-font-family: "Noto Sans Devanagari", "Noto Sans", system-ui, sans-serif;
+  --bs-body-font-family: var(--font-devanagari), var(--font-latin), system-ui, sans-serif;
   --bs-body-color: var(--text);
   --bs-body-bg: var(--canvas);
   --bs-secondary-color: var(--text-muted);
@@ -48,12 +48,6 @@ body {
 .small-seal { width: 36px; height: 36px; }
 .brand-title { color: var(--text); font-weight: 600; font-size: 1.125rem; line-height: 1.35; }
 .brand-sub { color: var(--text-muted); font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.02em; line-height: 1.4; }
-.main-nav a {
-  color: var(--text-muted); text-decoration: none; font-weight: 600; font-size: 0.9375rem;
-  padding: 0.5rem 1rem; border-radius: 0.5rem; white-space: nowrap; transition: color 0.15s, background 0.15s;
-}
-.main-nav a:hover { color: var(--text); }
-.main-nav a.active { background: #131b2e; color: #fff; }
 .helpline { background: #e5eeff; color: var(--text); border-radius: 9999px; padding: 0.25rem 1rem; }
 .helpline .material-symbols-outlined { font-size: 16px; }
 .helpline-label { font-size: 0.6875rem; font-weight: 600; color: var(--text-muted); line-height: 1.3; }
@@ -177,7 +171,11 @@ a.stat-card:hover { box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08); }
 .site-footer { background: var(--surface); border-top: 1px solid var(--line); margin-top: 2rem; }
 
 @media (max-width: 575.98px) {
-  .main-nav a { padding: 0.4rem 0.6rem; font-size: 0.85rem; }
   .post-title { font-size: 1.1rem; }
   .choice-card { min-height: 72px; }
 }
+
+/* Modal (React-controlled, Bootstrap styles) */
+.modal.show { display: block; }
+.modal-backdrop { opacity: 0.6; }
+.spinner-inline { width: 1rem; height: 1rem; border-width: 0.15em; }
