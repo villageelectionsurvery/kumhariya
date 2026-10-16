@@ -12,6 +12,7 @@ import {
   submitSurvey,
   type Answer,
 } from "@/lib/api";
+import VillageInfo from "./VillageInfo";
 
 const LETTERS = ["क", "ख", "ग", "घ", "ङ", "च"];
 const partyById = Object.fromEntries(PARTIES.map((p) => [p.id, p]));
@@ -21,6 +22,10 @@ type Stage = "loading" | "form" | "done" | "locked" | "not_started";
 const validName = (s?: string) => NAME_PATTERN.test(cleanName(s ?? ""));
 
 function postError(post: Post, answer?: Answer): string {
+  if (post.type === "ward") {
+    if (!answer?.ward) return "कृपया अपना वार्ड चुनें।";
+    return validName(answer.candidate) ? "" : `वार्ड ${answer.ward} के वार्ड पंच उम्मीदवार का सही नाम लिखें (2–60 अक्षर)।`;
+  }
   if (post.type === "name") {
     return validName(answer?.candidate) ? "" : `${post.label} पद के उम्मीदवार का सही नाम लिखें (2–60 अक्षर)।`;
   }
@@ -32,6 +37,10 @@ function postError(post: Post, answer?: Answer): string {
 }
 
 function answerText(post: Post, answer?: Answer): string | null {
+  if (post.type === "ward") {
+    if (!answer?.ward) return null;
+    return `वार्ड ${answer.ward} — ${cleanName(answer.candidate ?? "") || "नाम लिखें"}`;
+  }
   if (post.type === "name") return cleanName(answer?.candidate ?? "") || null;
   if (!answer?.party) return null;
   const party = partyById[answer.party];
@@ -113,6 +122,7 @@ export default function SurveyForm() {
       const selections = Object.fromEntries(
         POSTS.map((p) => {
           const a = answers[p.id];
+          if (p.type === "ward") return [p.id, { party: "", ward: Number(a.ward), candidate: cleanName(a.candidate ?? "") }];
           if (p.type === "name") return [p.id, { party: "", candidate: cleanName(a.candidate ?? "") }];
           return [p.id, partyById[a.party].independent ? { party: a.party, candidate: cleanName(a.candidate ?? "") } : { party: a.party }];
         }),
@@ -155,6 +165,8 @@ export default function SurveyForm() {
           <p>गाँव के चुनाव को लेकर आपकी पसंद क्या है? अपना मत सर्वेक्षण में दर्ज करें।</p>
         </div>
       </section>
+
+      <VillageInfo />
 
       {stage === "loading" && (
         <div className="text-center text-muted py-5" role="status">
@@ -234,10 +246,54 @@ export default function SurveyForm() {
                         </span>
                       </legend>
                       <p className="question mb-3">
-                        प्रश्न {i + 1}: {post.label} पद के लिए आपकी पसंद कौन है?
-                        {post.type === "name" && " उम्मीदवार का नाम लिखें।"}
+                        {post.type === "ward" ? (
+                          <>प्रश्न {i + 1}: आप किस वार्ड से हैं? अपने वार्ड के वार्ड पंच के लिए आपकी पसंद कौन है?</>
+                        ) : (
+                          <>
+                            प्रश्न {i + 1}: {post.label} पद के लिए आपकी पसंद कौन है?
+                            {post.type === "name" && " उम्मीदवार का नाम लिखें।"}
+                          </>
+                        )}
                       </p>
-                      {post.type === "name" ? (
+                      {post.type === "ward" ? (
+                        <div className="candidate-box">
+                          <div className="row g-3">
+                            <div className="col-sm-5">
+                              <label className="form-label fw-semibold" htmlFor={`ward_no_${post.id}`}>
+                                आपका वार्ड
+                              </label>
+                              <select
+                                className="form-select form-select-lg"
+                                id={`ward_no_${post.id}`}
+                                value={answer?.ward ?? ""}
+                                onChange={(e) => setAnswer(post.id, { party: "", ward: e.target.value, candidate: answer?.candidate })}
+                              >
+                                <option value="">— वार्ड चुनें —</option>
+                                {Array.from({ length: post.wards ?? 0 }, (_, w) => (
+                                  <option key={w + 1} value={String(w + 1)}>
+                                    वार्ड संख्या {w + 1}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                            <div className="col-sm-7">
+                              <label className="form-label fw-semibold" htmlFor={`candidate_${post.id}`}>
+                                {answer?.ward ? `वार्ड ${answer.ward} के` : "अपने वार्ड के"} वार्ड पंच उम्मीदवार का नाम
+                              </label>
+                              <input
+                                type="text"
+                                className="form-control form-control-lg"
+                                id={`candidate_${post.id}`}
+                                maxLength={60}
+                                autoComplete="off"
+                                placeholder="उदा. रामलाल"
+                                value={answer?.candidate ?? ""}
+                                onChange={(e) => setAnswer(post.id, { party: "", ward: answer?.ward, candidate: e.target.value })}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      ) : post.type === "name" ? (
                         <div className="candidate-box">
                           <label className="form-label fw-semibold" htmlFor={`candidate_${post.id}`}>
                             उम्मीदवार का नाम लिखें

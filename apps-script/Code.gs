@@ -15,12 +15,12 @@ var CONFIG = {
   sheetName: 'Responses',
   // type 'party': कांग्रेस / बीजेपी / निर्दलीय (+ name for निर्दलीय)
   // type 'name':  candidate's name only (saved with party = null)
+  // type 'ward':  the villager's own ward (1..wards) + that ward panch's name,
+  //               saved under "<label> - वार्ड <n>"
   posts: [
     { id: 'panchayat_samiti', label: 'पंचायत समिति सदस्य', type: 'party' },
     { id: 'sarpanch', label: 'सरपंच', type: 'party' },
-    { id: 'ward_1', label: 'वार्ड पंच - वार्ड 1', type: 'name' },
-    { id: 'ward_2', label: 'वार्ड पंच - वार्ड 2', type: 'name' },
-    { id: 'ward_3', label: 'वार्ड पंच - वार्ड 3', type: 'name' }
+    { id: 'ward', label: 'वार्ड पंच', type: 'ward', wards: 11 }
   ],
   parties: [
     { id: 'congress', label: 'कांग्रेस' },
@@ -93,6 +93,12 @@ function doPost(e) {
       JSON.stringify(checked.selections)
     ];
     CONFIG.posts.forEach(function (post) {
+      if (post.type === 'ward') {
+        var prefix = post.label + ' - वार्ड ';
+        var key = Object.keys(checked.selections).filter(function (k) { return k.indexOf(prefix) === 0; })[0];
+        row.push(Number(key.slice(prefix.length)), checked.selections[key].candidate_name);
+        return;
+      }
       var sel = checked.selections[post.label];
       if (post.type === 'name') row.push(sel.candidate_name);
       else row.push(sel.party, sel.candidate_name || '');
@@ -113,6 +119,20 @@ function validate_(input) {
   var errors = {};
   CONFIG.posts.forEach(function (post) {
     var answer = input[post.id] || {};
+    if (post.type === 'ward') {
+      var ward = Number(answer.ward);
+      if (!(ward >= 1 && ward <= post.wards && Math.floor(ward) === ward)) {
+        errors[post.id] = 'कृपया अपना वार्ड चुनें।';
+        return;
+      }
+      var wardName = cleanName_(String(answer.candidate || ''));
+      if (!NAME_PATTERN.test(wardName)) {
+        errors[post.id] = 'वार्ड ' + ward + ' के वार्ड पंच उम्मीदवार का सही नाम लिखें (2–60 अक्षर)।';
+        return;
+      }
+      selections[post.label + ' - वार्ड ' + ward] = { party: null, candidate_name: wardName };
+      return;
+    }
     if (post.type === 'name') {
       var name = cleanName_(String(answer.candidate || ''));
       if (!NAME_PATTERN.test(name)) {
@@ -166,7 +186,8 @@ function sheet_() {
   var sheet = ss.getSheetByName(CONFIG.sheetName) || ss.insertSheet(CONFIG.sheetName);
   var header = FIXED_COLUMNS.slice();
   CONFIG.posts.forEach(function (post) {
-    if (post.type === 'name') header.push(post.label + ' — उम्मीदवार का नाम');
+    if (post.type === 'ward') header.push(post.label + ' — वार्ड संख्या', post.label + ' — उम्मीदवार का नाम');
+    else if (post.type === 'name') header.push(post.label + ' — उम्मीदवार का नाम');
     else header.push(post.label + ' — पार्टी', post.label + ' — निर्दलीय नाम');
   });
   if (sheet.getLastRow() === 0) {

@@ -40,11 +40,17 @@ Each response is one row in the **Responses** tab: a response ID, the time (Indi
 
 1. पंचायत समिति सदस्य — कांग्रेस / बीजेपी / निर्दलीय (+ name for निर्दलीय)
 2. सरपंच — कांग्रेस / बीजेपी / निर्दलीय (+ name for निर्दलीय)
-3–5. वार्ड पंच, wards 1–3 — candidate's name only (saved with `"party": null`)
+3. वार्ड पंच — the villager picks their own ward (1–11) and writes that ward panch's name. It is saved as `"वार्ड पंच - वार्ड <n>": {"party": null, "candidate_name": "..."}`, and the results page shows each ward separately.
+
+To change the number of wards, edit `wards: 11` in both `src/lib/config.ts` and `apps-script/Code.gs`.
+
+## Village information
+
+The block under the hero (village line, number of wards, voters, polling centres and the election schedule) comes from `VILLAGE_INFO` in `src/lib/config.ts`.
 
 ## Change posts, wards or parties
 
-Edit `POSTS` / `PARTIES` in `src/lib/config.ts` **and** `CONFIG` in `apps-script/Code.gs` the same way (each post has `type: "party"` or `type: "name"`), then push and redeploy the script as a new version. A post's `label` is what is saved in the sheet, so keep it unchanged once responses exist; add a new post instead.
+Edit `POSTS` / `PARTIES` in `src/lib/config.ts` **and** `CONFIG` in `apps-script/Code.gs` the same way (each post has `type: "party"`, `"name"` or `"ward"`), then push and redeploy the script as a new version. A post's `label` is what is saved in the sheet, so keep it unchanged once responses exist; add a new post instead.
 
 The header helpline ("नागरिक सहायता") appears when `helpline` is set in `src/lib/config.ts`.
 

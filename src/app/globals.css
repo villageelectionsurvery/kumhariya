@@ -180,3 +180,27 @@ a.stat-card:hover { box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08); }
 .modal-backdrop { opacity: 0.6; }
 .spinner-inline { width: 1rem; height: 1rem; border-width: 0.15em; }
 .download-btn { min-height: 38px; }
+
+/* Village information block */
+.about-card { background: var(--surface-low); }
+.info-stats { display: grid; grid-template-columns: repeat(3, 1fr); overflow: hidden; }
+.info-stat { padding: 1.5rem 1rem; text-align: center; }
+.info-stat + .info-stat { border-left: 1px solid var(--line); }
+.info-stat-value { font-size: clamp(1.8rem, 5vw, 2.6rem); font-weight: 700; color: #131b2e; line-height: 1.2; font-variant-numeric: tabular-nums; }
+.info-stat-label { color: var(--text-muted); font-weight: 600; margin-top: 0.25rem; }
+.section-heading h2 { font-size: clamp(1.25rem, 3vw, 1.6rem); font-weight: 700; color: var(--civic-slate); white-space: nowrap; }
+.section-rule { flex: 1; height: 1px; background: var(--line); }
+.schedule-grid { display: grid; grid-template-columns: repeat(2, 1fr); overflow: hidden; }
+.schedule-item { padding: 1rem 1.25rem; border-bottom: 1px solid var(--line); }
+.schedule-item:nth-child(odd) { border-right: 1px solid var(--line); }
+.schedule-item.schedule-wide { grid-column: 1 / -1; border-right: none; }
+.schedule-item:last-child { border-bottom: none; }
+.schedule-item dt { font-size: 0.85rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.25rem; }
+.schedule-item dd { margin: 0; font-size: 1.05rem; color: var(--text); }
+.schedule-item dd strong { color: var(--civic-slate); }
+@media (max-width: 575.98px) {
+  .info-stat { padding: 1rem 0.5rem; }
+  .schedule-grid { grid-template-columns: 1fr; }
+  .schedule-item:nth-child(odd) { border-right: none; }
+  .schedule-item:nth-last-child(2):not(.schedule-wide) { border-bottom: 1px solid var(--line); }
+}

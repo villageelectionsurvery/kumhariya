@@ -1,6 +1,6 @@
 import { SURVEY } from "./config";
 
-export type Answer = { party: string; candidate?: string };
+export type Answer = { party: string; candidate?: string; ward?: string | number };
 
 export type SubmitResult =
   | { ok: true }

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ArcElement, BarController, BarElement, CategoryScale, Chart, DoughnutController, Legend, LinearScale, Tooltip } from "chart.js";
-import { cleanName, hindiNumber, PARTIES, POSTS, SURVEY, type Post } from "@/lib/config";
+import { cleanName, hindiNumber, PARTIES, POSTS, SURVEY, wardLabel, type Post } from "@/lib/config";
 import { apiConfigured, fetchLeads, type LeadsJson } from "@/lib/api";
 
 Chart.register(DoughnutController, ArcElement, BarController, BarElement, CategoryScale, LinearScale, Tooltip, Legend);
@@ -28,11 +28,25 @@ type PostStats = {
   candidates: { name: string; count: number; percent: number }[];
 };
 
+/** Posts as shown on this page: a "ward" question becomes one name-only
+    section per ward. */
+const RESULT_POSTS: Post[] = POSTS.flatMap((p) =>
+  p.type === "ward"
+    ? Array.from({ length: p.wards ?? 0 }, (_, i): Post => ({
+        id: `${p.id}_${i + 1}`,
+        label: wardLabel(p, i + 1),
+        title: `वार्ड पंच — वार्ड संख्या ${i + 1}`,
+        tag: p.tag,
+        type: "name",
+      }))
+    : [p],
+);
+
 /** Counts every post from the leads.json responses. Independent candidates are
     grouped by name (case and extra spaces ignored). */
 function buildStats(leads: LeadsJson | null): PostStats[] {
   const responses = leads?.responses ?? [];
-  return POSTS.map((post) => {
+  return RESULT_POSTS.map((post) => {
     const partyCounts = new Map(PARTIES.map((p) => [p.label, 0]));
     const independent = PARTIES.find((p) => p.independent);
     const candidates = new Map<string, { name: string; count: number }>();
@@ -238,7 +252,7 @@ export default function ResultsDashboard() {
                 <div className="stat-value">{total.toLocaleString("en-IN")}</div>
               </div>
             </div>
-            {stats.map((post) => {
+            {stats.filter((post) => post.type === "party" || post.total > 0).map((post) => {
               const leadParty = post.parties.reduce<PostStats["parties"][number] | null>(
                 (best, p) => (p.count > 0 && (!best || p.count > best.count) ? p : best),
                 null,
@@ -269,56 +283,66 @@ export default function ResultsDashboard() {
             })}
           </section>
 
-          {stats.map((post, i) => (
-            <section className="civic-card p-3 p-md-4 mb-4 result-section" id={`post-${post.id}`} key={post.id}>
-              <div className="d-flex align-items-center justify-content-between gap-2 mb-3">
+          {stats.map((post, i) =>
+            post.type === "name" && post.total === 0 ? (
+              <section className="civic-card p-3 mb-3 result-section d-flex align-items-center justify-content-between gap-2" id={`post-${post.id}`} key={post.id}>
                 <div className="d-flex align-items-center gap-3">
                   <span className="num-badge">{hindiNumber(i + 1)}</span>
                   <h2 className="post-title mb-0">{post.title}</h2>
                 </div>
-                <span className="pill pill-neutral">कुल: {post.total}</span>
-              </div>
+                <span className="small text-muted">अभी कोई प्रतिक्रिया नहीं</span>
+              </section>
+            ) : (
+              <section className="civic-card p-3 p-md-4 mb-4 result-section" id={`post-${post.id}`} key={post.id}>
+                <div className="d-flex align-items-center justify-content-between gap-2 mb-3">
+                  <div className="d-flex align-items-center gap-3">
+                    <span className="num-badge">{hindiNumber(i + 1)}</span>
+                    <h2 className="post-title mb-0">{post.title}</h2>
+                  </div>
+                  <span className="pill pill-neutral">कुल: {post.total}</span>
+                </div>
 
-              {post.type === "party" && (
-                <div className="row g-3 mb-3">
-                  {post.parties.map((p) => (
-                    <div className="col-md-4" key={p.label}>
-                      <div className="party-tile p-3 h-100" style={{ "--party": p.color } as React.CSSProperties}>
-                        <div className="d-flex justify-content-between align-items-baseline">
-                          <span className="fw-semibold">{p.label}</span>
-                          <span className="party-pct">{fmt(p.percent)}</span>
+                {post.type === "party" && (
+                  <div className="row g-3 mb-3">
+                    {post.parties.map((p) => (
+                      <div className="col-md-4" key={p.label}>
+                        <div className="party-tile p-3 h-100" style={{ "--party": p.color } as React.CSSProperties}>
+                          <div className="d-flex justify-content-between align-items-baseline">
+                            <span className="fw-semibold">{p.label}</span>
+                            <span className="party-pct">{fmt(p.percent)}</span>
+                          </div>
+                          <div className="progress-line my-2"><span style={{ width: `${p.percent}%` }} /></div>
+                          <div className="small text-muted">{p.count} प्रतिक्रियाएँ</div>
                         </div>
-                        <div className="progress-line my-2"><span style={{ width: `${p.percent}%` }} /></div>
-                        <div className="small text-muted">{p.count} प्रतिक्रियाएँ</div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+                    ))}
+                  </div>
+                )}
 
-              <PostCharts post={post} />
+                <PostCharts post={post} />
 
-              <h3 className="chart-title mt-4">{post.type === "name" ? "उम्मीदवार" : "निर्दलीय उम्मीदवार"}</h3>
-              {post.candidates.length ? (
-                <div className="table-responsive">
-                  <table className="table table-sm align-middle mb-0">
-                    <thead>
-                      <tr><th>उम्मीदवार का नाम</th><th className="text-end">प्रतिक्रियाएँ</th><th className="text-end">प्रतिशत</th></tr>
-                    </thead>
-                    <tbody>
-                      {post.candidates.map((c) => (
-                        <tr key={c.name}><td>{c.name}</td><td className="text-end">{c.count}</td><td className="text-end">{fmt(c.percent)}</td></tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <p className="small text-muted mb-0">
-                  इस पद के लिए अभी किसी {post.type === "name" ? "" : "निर्दलीय "}उम्मीदवार का नाम नहीं आया है।
-                </p>
-              )}
-            </section>
-          ))}
+                <h3 className="chart-title mt-4">{post.type === "name" ? "उम्मीदवार" : "निर्दलीय उम्मीदवार"}</h3>
+                {post.candidates.length ? (
+                  <div className="table-responsive">
+                    <table className="table table-sm align-middle mb-0">
+                      <thead>
+                        <tr><th>उम्मीदवार का नाम</th><th className="text-end">प्रतिक्रियाएँ</th><th className="text-end">प्रतिशत</th></tr>
+                      </thead>
+                      <tbody>
+                        {post.candidates.map((c) => (
+                          <tr key={c.name}><td>{c.name}</td><td className="text-end">{c.count}</td><td className="text-end">{fmt(c.percent)}</td></tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p className="small text-muted mb-0">
+                    इस पद के लिए अभी किसी {post.type === "name" ? "" : "निर्दलीय "}उम्मीदवार का नाम नहीं आया है।
+                  </p>
+                )}
+              </section>
+            ),
+          )}
 
           <p className="small text-muted">प्रतिशत = (उस विकल्प की प्रतिक्रियाएँ ÷ उस पद की कुल मान्य प्रतिक्रियाएँ) × 100, दो दशमलव तक।</p>
         </>

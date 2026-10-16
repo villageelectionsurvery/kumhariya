@@ -9,8 +9,17 @@
 /*
  * type "party": choose कांग्रेस / बीजेपी / निर्दलीय (निर्दलीय asks for a name).
  * type "name":  only the candidate's name is written; no party choice.
+ * type "ward":  the villager picks their own ward (1..wards) and writes the
+ *               name for that ward only. Saved as "<label> - वार्ड <n>".
  */
-export type Post = { id: string; label: string; title: string; tag: string; type: "party" | "name" };
+export type Post = {
+  id: string;
+  label: string;
+  title: string;
+  tag: string;
+  type: "party" | "name" | "ward";
+  wards?: number;
+};
 export type Party = { id: string; label: string; hint: string; icon: string; color: string; independent?: boolean };
 
 export const SURVEY = {
@@ -27,12 +36,29 @@ export const SURVEY = {
   helpline: "",
 };
 
+/* Village facts and election schedule shown under the hero on the survey page. */
+export const VILLAGE_INFO = {
+  about: "कुम्हारिया ग्राम पंचायत अजमेर जिले की भिनाय पंचायत समिति में आती है।",
+  stats: [
+    { value: "11", label: "वार्ड" },
+    { value: "3,797", label: "कुल मतदाता" },
+    { value: "4", label: "मतदान केंद्र" },
+  ],
+  scheduleTitle: "सरपंच चुनाव 2026",
+  // `strong` is shown in bold before the rest of the text
+  schedule: [
+    { label: "मतदान", strong: "30 अक्टूबर 2026", text: " (चरण 2), सुबह 7 से शाम 6 बजे" },
+    { label: "नामांकन", text: "29 अक्टूबर 2026, सुबह 8 से 11 बजे तक" },
+    { label: "नाम वापसी", text: "29 अक्टूबर 2026, दोपहर 2 बजे तक" },
+    { label: "मतगणना", text: "30 अक्टूबर 2026, मतदान समाप्त होते ही ग्राम पंचायत मुख्यालय पर" },
+    { label: "उपसरपंच चुनाव", text: "31 अक्टूबर 2026" },
+  ] as { label: string; strong?: string; text: string }[],
+};
+
 export const POSTS: Post[] = [
   { id: "panchayat_samiti", label: "पंचायत समिति सदस्य", title: "पंचायत समिति सदस्य (Panchayat Samiti Member)", tag: "पंचायत समिति", type: "party" },
   { id: "sarpanch", label: "सरपंच", title: "सरपंच (Sarpanch)", tag: "मुख्य पद", type: "party" },
-  { id: "ward_1", label: "वार्ड पंच - वार्ड 1", title: "वार्ड पंच — वार्ड संख्या 1", tag: "वार्ड पंच", type: "name" },
-  { id: "ward_2", label: "वार्ड पंच - वार्ड 2", title: "वार्ड पंच — वार्ड संख्या 2", tag: "वार्ड पंच", type: "name" },
-  { id: "ward_3", label: "वार्ड पंच - वार्ड 3", title: "वार्ड पंच — वार्ड संख्या 3", tag: "वार्ड पंच", type: "name" },
+  { id: "ward", label: "वार्ड पंच", title: "वार्ड पंच (Ward Panch)", tag: "अपना वार्ड", type: "ward", wards: 11 },
 ];
 
 export const PARTIES: Party[] = [
@@ -47,3 +73,6 @@ export const cleanName = (s: string) => s.trim().replace(/\s+/g, " ").normalize(
 
 const HINDI_DIGITS = "०१२३४५६७८९";
 export const hindiNumber = (n: number) => String(n).replace(/\d/g, (d) => HINDI_DIGITS[Number(d)]);
+
+/** Label a ward answer is saved under, e.g. "वार्ड पंच - वार्ड 5". */
+export const wardLabel = (post: Post, ward: number) => `${post.label} - वार्ड ${ward}`;
