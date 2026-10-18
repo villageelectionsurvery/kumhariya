@@ -63,7 +63,7 @@ export const POSTS: Post[] = [
     type: "party",
     candidates: {
       congress: "आशा मधुसुदन पारीक (कीटाप)",
-      bjp: "ओमप्रकाश",
+      bjp: "ओमप्रकाश (कुम्हारिया)",
       independent: "पूजा विष्णु कुमार (कीटाप)",
     },
   },

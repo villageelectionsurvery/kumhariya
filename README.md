@@ -40,7 +40,7 @@ Each response is one row in the **Responses** tab: a response ID, the time (Indi
 
 The survey asks about one post only:
 
-- पंचायत समिति सदस्य — कांग्रेस: आशा मधुसुदन पारीक (कीटाप) / बीजेपी: ओमप्रकाश / निर्दलीय: पूजा विष्णु कुमार (कीटाप). Polling day is 28 October 2026.
+- पंचायत समिति सदस्य — कांग्रेस: आशा मधुसुदन पारीक (कीटाप) / बीजेपी: ओमप्रकाश (कुम्हारिया) / निर्दलीय: पूजा विष्णु कुमार (कीटाप). Polling day is 28 October 2026.
 
 Each party's declared candidate is set with `candidates` on the post in `src/lib/config.ts` and is shown on that party's choice and on the results page. If निर्दलीय has no declared candidate, the villager is asked to write a name instead.
 
