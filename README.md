@@ -38,11 +38,13 @@ Each response is one row in the **Responses** tab: a response ID, the time (Indi
 
 ## Posts
 
-1. पंचायत समिति सदस्य — कांग्रेस / बीजेपी / निर्दलीय (+ name for निर्दलीय)
-2. सरपंच — कांग्रेस / बीजेपी / निर्दलीय (+ name for निर्दलीय)
-3. वार्ड पंच — the villager picks their own ward (1–11) and writes that ward panch's name. It is saved as `"वार्ड पंच - वार्ड <n>": {"party": null, "candidate_name": "..."}`, and the results page shows each ward separately.
+The survey asks about one post only:
 
-To change the number of wards, edit `wards: 11` in both `src/lib/config.ts` and `apps-script/Code.gs`.
+- पंचायत समिति सदस्य — कांग्रेस: आशा मधुसुदन पारीक (कीटाप) / बीजेपी: ओमप्रकाश / निर्दलीय: पूजा विष्णु कुमार (कीटाप). Polling day is 28 October 2026.
+
+Each party's declared candidate is set with `candidates` on the post in `src/lib/config.ts` and is shown on that party's choice and on the results page. If निर्दलीय has no declared candidate, the villager is asked to write a name instead.
+
+The code still supports name-only (`type: "name"`) and ward (`type: "ward"`) posts, for example Sarpanch or Ward Panch. To bring one back, add it to `POSTS` in `src/lib/config.ts` and to `CONFIG.posts` in `apps-script/Code.gs`.
 
 ## Village information
 

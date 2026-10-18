@@ -112,6 +112,7 @@ body {
 .choice-name { font-weight: 700; font-size: 1.05rem; color: var(--civic-slate); margin-top: 0.4rem; }
 .choice-name .material-symbols-outlined { color: var(--civic-saffron); margin-right: 0.3rem; }
 .choice-hint { font-size: 0.8rem; color: var(--text-muted); }
+.choice-candidate { display: block; font-weight: 600; font-size: 0.95rem; color: var(--civic-slate); }
 .candidate-box { background: #f0fdf4; border: 1px dashed var(--civic-green-2); border-radius: 0.5rem; padding: 1rem; }
 
 /* Summary sidebar */

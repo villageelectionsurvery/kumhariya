@@ -18,9 +18,7 @@ var CONFIG = {
   // type 'ward':  the villager's own ward (1..wards) + that ward panch's name,
   //               saved under "<label> - वार्ड <n>"
   posts: [
-    { id: 'panchayat_samiti', label: 'पंचायत समिति सदस्य', type: 'party' },
-    { id: 'sarpanch', label: 'सरपंच', type: 'party' },
-    { id: 'ward', label: 'वार्ड पंच', type: 'ward', wards: 11 }
+    { id: 'panchayat_samiti', label: 'पंचायत समिति सदस्य', type: 'party' }
   ],
   parties: [
     { id: 'congress', label: 'कांग्रेस' },

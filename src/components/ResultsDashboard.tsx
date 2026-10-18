@@ -24,7 +24,7 @@ type PostStats = {
   title: string;
   type: Post["type"];
   total: number;
-  parties: { label: string; color: string; independent: boolean; count: number; percent: number }[];
+  parties: { label: string; candidate?: string; color: string; independent: boolean; count: number; percent: number }[];
   candidates: { name: string; count: number; percent: number }[];
 };
 
@@ -78,7 +78,14 @@ function buildStats(leads: LeadsJson | null): PostStats[] {
       total,
       parties: post.type === "name" ? [] : PARTIES.map((p) => {
         const count = partyCounts.get(p.label)!;
-        return { label: p.label, color: p.color, independent: Boolean(p.independent), count, percent: percent(count, total) };
+        return {
+          label: p.label,
+          candidate: post.candidates?.[p.id],
+          color: p.color,
+          independent: Boolean(p.independent),
+          count,
+          percent: percent(count, total),
+        };
       }),
       candidates: [...candidates.values()]
         .map((c) => ({ ...c, percent: percent(c.count, total) }))
@@ -311,6 +318,7 @@ export default function ResultsDashboard() {
                             <span className="fw-semibold">{p.label}</span>
                             <span className="party-pct">{fmt(p.percent)}</span>
                           </div>
+                          {p.candidate && <div className="small fw-semibold">{p.candidate}</div>}
                           <div className="progress-line my-2"><span style={{ width: `${p.percent}%` }} /></div>
                           <div className="small text-muted">{p.count} प्रतिक्रियाएँ</div>
                         </div>

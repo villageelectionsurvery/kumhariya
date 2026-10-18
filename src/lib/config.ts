@@ -19,6 +19,9 @@ export type Post = {
   tag: string;
   type: "party" | "name" | "ward";
   wards?: number;
+  // party posts: a party's declared candidate, shown on that party's choice (keyed by party id).
+  // When निर्दलीय has one, it is saved as the candidate name and no name is asked for.
+  candidates?: Partial<Record<string, string>>;
 };
 export type Party = { id: string; label: string; hint: string; icon: string; color: string; independent?: boolean };
 
@@ -44,21 +47,26 @@ export const VILLAGE_INFO = {
     { value: "3,797", label: "कुल मतदाता" },
     { value: "4", label: "मतदान केंद्र" },
   ],
-  scheduleTitle: "सरपंच चुनाव 2026",
+  scheduleTitle: "पंचायत समिति सदस्य चुनाव 2026",
   // `strong` is shown in bold before the rest of the text
   schedule: [
-    { label: "मतदान", strong: "30 अक्टूबर 2026", text: " (चरण 2), सुबह 7 से शाम 6 बजे" },
-    { label: "नामांकन", text: "29 अक्टूबर 2026, सुबह 8 से 11 बजे तक" },
-    { label: "नाम वापसी", text: "29 अक्टूबर 2026, दोपहर 2 बजे तक" },
-    { label: "मतगणना", text: "30 अक्टूबर 2026, मतदान समाप्त होते ही ग्राम पंचायत मुख्यालय पर" },
-    { label: "उपसरपंच चुनाव", text: "31 अक्टूबर 2026" },
+    { label: "मतदान", strong: "28 अक्टूबर 2026", text: "" },
   ] as { label: string; strong?: string; text: string }[],
 };
 
 export const POSTS: Post[] = [
-  { id: "panchayat_samiti", label: "पंचायत समिति सदस्य", title: "पंचायत समिति सदस्य (Panchayat Samiti Member)", tag: "पंचायत समिति", type: "party" },
-  { id: "sarpanch", label: "सरपंच", title: "सरपंच (Sarpanch)", tag: "मुख्य पद", type: "party" },
-  { id: "ward", label: "वार्ड पंच", title: "वार्ड पंच (Ward Panch)", tag: "अपना वार्ड", type: "ward", wards: 11 },
+  {
+    id: "panchayat_samiti",
+    label: "पंचायत समिति सदस्य",
+    title: "पंचायत समिति सदस्य (Panchayat Samiti Member)",
+    tag: "पंचायत समिति",
+    type: "party",
+    candidates: {
+      congress: "आशा मधुसुदन पारीक (कीटाप)",
+      bjp: "ओमप्रकाश",
+      independent: "पूजा विष्णु कुमार (कीटाप)",
+    },
+  },
 ];
 
 export const PARTIES: Party[] = [

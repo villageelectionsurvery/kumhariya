@@ -21,6 +21,10 @@ type Stage = "loading" | "form" | "done" | "locked" | "not_started";
 
 const validName = (s?: string) => NAME_PATTERN.test(cleanName(s ?? ""));
 
+/** निर्दलीय with no declared candidate on this post: the villager writes the name. */
+const asksName = (post: Post, partyId?: string) =>
+  Boolean(partyId && partyById[partyId]?.independent && !post.candidates?.[partyId]);
+
 function postError(post: Post, answer?: Answer): string {
   if (post.type === "ward") {
     if (!answer?.ward) return "कृपया अपना वार्ड चुनें।";
@@ -30,7 +34,7 @@ function postError(post: Post, answer?: Answer): string {
     return validName(answer?.candidate) ? "" : `${post.label} पद के उम्मीदवार का सही नाम लिखें (2–60 अक्षर)।`;
   }
   if (!answer?.party) return `${post.label} पद के लिए अपनी पसंद चुनें।`;
-  if (partyById[answer.party]?.independent && !validName(answer.candidate)) {
+  if (asksName(post, answer.party) && !validName(answer.candidate)) {
     return `${post.label} पद के निर्दलीय उम्मीदवार का सही नाम लिखें (2–60 अक्षर)।`;
   }
   return "";
@@ -44,6 +48,8 @@ function answerText(post: Post, answer?: Answer): string | null {
   if (post.type === "name") return cleanName(answer?.candidate ?? "") || null;
   if (!answer?.party) return null;
   const party = partyById[answer.party];
+  const declared = post.candidates?.[party.id];
+  if (declared) return `${party.label} — ${declared}`;
   if (party.independent) return `${party.label} — ${cleanName(answer.candidate ?? "") || "नाम लिखें"}`;
   return party.label;
 }
@@ -94,9 +100,9 @@ export default function SurveyForm() {
     }
   }
 
-  function choose(postId: string, partyId: string) {
-    setAnswer(postId, { party: partyId, candidate: answers[postId]?.candidate });
-    if (partyById[partyId].independent) setTimeout(() => nameRefs.current[postId]?.focus());
+  function choose(post: Post, partyId: string) {
+    setAnswer(post.id, { party: partyId, candidate: answers[post.id]?.candidate });
+    if (asksName(post, partyId)) setTimeout(() => nameRefs.current[post.id]?.focus());
   }
 
   function review(e: React.FormEvent) {
@@ -124,7 +130,8 @@ export default function SurveyForm() {
           const a = answers[p.id];
           if (p.type === "ward") return [p.id, { party: "", ward: Number(a.ward), candidate: cleanName(a.candidate ?? "") }];
           if (p.type === "name") return [p.id, { party: "", candidate: cleanName(a.candidate ?? "") }];
-          return [p.id, partyById[a.party].independent ? { party: a.party, candidate: cleanName(a.candidate ?? "") } : { party: a.party }];
+          if (!partyById[a.party].independent) return [p.id, { party: a.party }];
+          return [p.id, { party: a.party, candidate: p.candidates?.[a.party] ?? cleanName(a.candidate ?? "") }];
         }),
       );
       const result = await submitSurvey({ submission_id: submissionId.current, device_id: deviceId(), selections });
@@ -162,7 +169,7 @@ export default function SurveyForm() {
         <img src={`${basePath}/hero.jpg`} alt="ग्राम पंचायत कुम्हारिया का ग्रामीण दृश्य" className="hero-img" />
         <div className="hero-content">
           <h1>{SURVEY.title}</h1>
-          <p>गाँव के चुनाव को लेकर आपकी पसंद क्या है? अपना मत सर्वेक्षण में दर्ज करें।</p>
+          <p>पंचायत समिति सदस्य चुनाव को लेकर आपकी पसंद क्या है? अपना मत सर्वेक्षण में दर्ज करें।</p>
         </div>
       </section>
 
@@ -223,7 +230,7 @@ export default function SurveyForm() {
                 {POSTS.map((post, i) => {
                   const answer = answers[post.id];
                   const complete = !postError(post, answer);
-                  const showName = answer && partyById[answer.party]?.independent;
+                  const showName = answer && asksName(post, answer.party);
                   return (
                     <fieldset
                       key={post.id}
@@ -325,13 +332,16 @@ export default function SurveyForm() {
                                       name={`choice-${post.id}`}
                                       value={party.id}
                                       checked={answer?.party === party.id}
-                                      onChange={() => choose(post.id, party.id)}
+                                      onChange={() => choose(post, party.id)}
                                     />
                                   </span>
                                   <span className="choice-name">
                                     <span className="material-symbols-outlined">{party.icon}</span>
                                     {party.label}
                                   </span>
+                                  {post.candidates?.[party.id] && (
+                                    <span className="choice-candidate">{post.candidates[party.id]}</span>
+                                  )}
                                   <span className="choice-hint">{party.hint}</span>
                                 </label>
                               </div>
